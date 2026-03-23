@@ -1,0 +1,19 @@
+localhost {
+    respond "Hello, World. I don't believe this but it works"
+    log
+}
+
+# Static Site - web
+abcnorio.itztlacoliuhqui.org {
+    reverse_proxy web:80
+}
+
+# Wordpress - wp
+abcwp.itztlacoliuhqui.org {
+    reverse_proxy frank:80
+}
+
+# PHP MyAdmin - pma
+pma.itztlacoliuhqui.org {
+    reverse_proxy pma
+}

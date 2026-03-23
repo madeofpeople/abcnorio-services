@@ -1,0 +1,115 @@
+services:
+  proxy:
+    image: caddy:2.11-alpine
+    container_name: proxy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ${PROXY_CADDYFILE}:/etc/caddy/Caddyfile
+      - proxy_data:/data
+      - proxy_config:/config
+    networks:
+      - net_web
+      - net_internal
+  web:
+    image: caddy:2.11-alpine
+    container_name: web
+    restart: always
+    volumes:
+      - ${STATIC_SERVER_CADDYFILE}:/etc/caddy/Caddyfile
+      - ${STATIC_SERVER_SITE_DIR}:/srv/
+      - web_data:/data
+      - web_config:/config
+    networks:
+      - net_web
+  frank:
+    build: 
+      context: /home/madeofpeople/abcnorio.org/wp/staging/
+      dockerfile: ${STAGING_HOST_ROOT}/Dockerfile
+      args:
+        HOST_ROOT: ${STAGING_HOST_ROOT}
+        APP_ROOT: ${STAGING_APP_ROOT}
+        USER: ${STAGING_USER}
+    container_name: frank
+    ports:
+      - 8100:80
+    environment:
+      SERVER_NAME: ${STAGING_SERVER_NAME:-:80}
+      DB_HOST: ${STAGING_DB_HOST:-mariadb}
+      DB_NAME: ${STAGING_DB_NAME:-exampledb}
+      DB_USER: ${STAGING_DB_USER:-exampleuser}
+      DB_PASSWORD: ${STAGING_DB_PASSWORD:-examplepass}
+      WP_ENV: staging
+      WP_HOME: 'http://abcwp.itztlacoliuhqui.org'
+      WP_SITEURL: 'http://abcwp.itztlacoliuhqui.org/wp'
+      DEBUG: ${STAGING_WP_DEBUG:-true}
+      WORDPRESS_TABLE_PREFIX: ${STAGING_DB_TABLE_PREFIX:-wp_}
+      AUTH_KEY: '${STAGING_AUTH_KEY}'
+      SECURE_AUTH_KEY: '${STAGING_SECURE_AUTH_KEY}'
+      LOGGED_IN_KEY: '${STAGING_LOGGED_IN_KEY}'
+      NONCE_KEY: '${STAGING_NONCE_KEY}'
+      AUTH_SALT: '${STAGING_AUTH_SALT}'
+      SECURE_AUTH_SALT: '${STAGING_SECURE_AUTH_SALT}'
+      LOGGED_IN_SALT: '${STAGING_LOGGED_IN_SALT}'
+      NONCE_SALT: '${STAGING_NONCE_SALT}'
+      TTL: ${TTL:-80000}
+      CADDY_ROOT: ${STAGING_WEB_ROOT}
+      CADDY_GLOBAL_OPTIONS: |
+        auto_https off
+        frankenphp {
+          php_ini upload_max_filesize 100M  # Set PHP configuration
+          php_ini post_max_size 100M
+        }
+    restart: always
+    volumes:
+      - ${STAGING_HOST_ROOT}Caddyfile:/etc/caddy/Caddyfile
+      - ${STAGING_HOST_ROOT}${STAGING_APP_BIND}:${STAGING_APP_ROOT}
+    tty: true
+    networks:
+      - net_web
+      - net_internal
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: always
+    ports:
+      - ${WP_LOCAL_DB_PORT:-3309}:3306
+    environment:
+      # MARIADB_DATABASE, MARIADB_USER, and MARIADB_PASSWORD are required.
+      # So on first run, mariadb creates the proper users / passwords etc.
+      MARIADB_ROOT_PASSWORD: ${STAGING_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${STAGING_DB_NAME}
+      MARIADB_USER: ${STAGING_DB_USER}
+      MARIADB_PASSWORD: ${STAGING_DB_PASSWORD}
+    volumes:
+      - abcwp_dbv:/var/lib/mysql
+    networks:
+      - net_internal
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    restart: always
+    ports:
+      - ${LOCAL_PHPMYADMIN_PORT:-8096}:80
+    environment:
+      PMA_HOST: mariadb
+      MARIADB_ROOT_PASSWORD: ${STAGING_DB_ROOT_PASSWORD:-examplepass}
+    depends_on:
+      - mariadb
+    networks:
+      - net_web
+      - net_internal
+volumes:
+  abcwp_dbv: {}
+  proxy_data: {}
+  proxy_config: {}
+  web_data: {}
+  web_config: {}
+networks:
+  net_internal:
+    name: net_internal
+  net_web:
+    name: net_web
+    driver: bridge

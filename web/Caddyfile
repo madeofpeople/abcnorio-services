@@ -1,0 +1,17 @@
+{
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+http://abcnorio.itztlacoliuhqui.org {
+	tls thiago@madeofpeople.org
+	root /srv/prod/
+	file_server
+    templates
+	encode zstd gzip
+	handle_errors {
+    	rewrite * /404.html
+    	file_server
+  	}
+}
