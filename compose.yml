@@ -24,6 +24,8 @@ services:
       - abcnorio_net_web
       - abcnorio_net_proxy
   astro-dev:
+    profiles:
+      - dev
     build: 
       context: ${ASTRO_HOST_ROOT}
       dockerfile: Dockerfile
@@ -306,6 +308,8 @@ services:
       - abcnorio_net_orchestrator
       - abcnorio_net_proxy
   abcwpdev:
+    profiles:
+      - dev
     build: 
       context: ${DEV_HOST_ROOT}
       dockerfile: ../Dockerfile
